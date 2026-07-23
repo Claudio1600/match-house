@@ -32,6 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
   ],
+  newArchEnabled: true,
   experiments: {
     typedRoutes: true,
   },
