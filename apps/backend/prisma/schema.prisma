@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserType {
+  LANDLORD
+  SEEKER
+}
+
+enum SwipeAction {
+  SMASH
+  PASS
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String
+  userType       UserType
+  isVerified     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  landlordProfile LandlordProfile?
+  seekerProfile   SeekerProfile?
+  refreshTokens   RefreshToken[]
+  swipesGiven     Swipe[]   @relation("SwipeFrom")
+  swipesReceived  Swipe[]   @relation("SwipeTo")
+  matchesA        Match[]   @relation("MatchUserA")
+  matchesB        Match[]   @relation("MatchUserB")
+  messages        Message[]
+}
+
+model LandlordProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  address           String
+  city              String
+  latitude          Float
+  longitude         Float
+  rent              Float
+  totalRooms        Int
+  availableRooms    Int
+  currentTenants    Int
+  squareMeters      Int?
+  floor             Int?
+  furnished         Boolean  @default(false)
+  billsIncluded     Boolean  @default(false)
+  petsAllowed       Boolean  @default(false)
+  smokingAllowed    Boolean  @default(false)
+  wifiIncluded      Boolean  @default(false)
+  parkingAvailable  Boolean  @default(false)
+  availableFrom     DateTime
+  description       String
+  houseRules        String?
+  neighborhoodInfo  String?
+  photos            PropertyPhoto[]
+  updatedAt         DateTime @updatedAt
+}
+
+model PropertyPhoto {
+  id                String          @id @default(cuid())
+  landlordProfileId String
+  landlordProfile   LandlordProfile @relation(fields: [landlordProfileId], references: [id], onDelete: Cascade)
+  url               String
+  cloudinaryId      String
+  order             Int             @default(0)
+  isMain            Boolean         @default(false)
+}
+
+model SeekerProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName    String
+  lastName     String
+  age          Int
+  bio          String
+  occupation   String
+  university   String?
+  company      String?
+  smoker       Boolean  @default(false)
+  hasPets      Boolean  @default(false)
+  schedule     String?
+  cleanliness  Int      @default(3)
+  noiseLevel   Int      @default(3)
+  budgetMin    Float?
+  budgetMax    Float?
+  preferredCity String?
+  moveInDate   DateTime?
+  hobbies      String[]
+  sports       String[]
+  languages    String[]
+  photos       SeekerPhoto[]
+  updatedAt    DateTime @updatedAt
+}
+
+model SeekerPhoto {
+  id             String        @id @default(cuid())
+  seekerProfileId String
+  seekerProfile  SeekerProfile @relation(fields: [seekerProfileId], references: [id], onDelete: Cascade)
+  url            String
+  cloudinaryId   String
+  order          Int           @default(0)
+  isMain         Boolean       @default(false)
+}
+
+model Swipe {
+  id          String      @id @default(cuid())
+  fromUserId  String
+  toUserId    String
+  action      SwipeAction
+  createdAt   DateTime    @default(now())
+  fromUser    User        @relation("SwipeFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User        @relation("SwipeTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  @@unique([fromUserId, toUserId])
+}
+
+model Match {
+  id        String    @id @default(cuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime  @default(now())
+  userA     User      @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB     User      @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  @@unique([userAId, userBId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  matchId   String
+  senderId  String
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

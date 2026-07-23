@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:\\\\Users\\\\claudio.olivari\\\\OneDrive - Accenture\\\\Desktop\\\\APP\\\\apps\\\\backend\\\\src\\\\routes\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\claudio.olivari\\\\OneDrive - Accenture\\\\Desktop\\\\APP\\\\apps\\\\backend\\\\src\\\\controllers\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\claudio.olivari\\\\OneDrive - Accenture\\\\Desktop\\\\APP\\\\apps\\\\backend\\\\src\\\\middleware\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\claudio.olivari\\\\OneDrive - Accenture\\\\Desktop\\\\APP\\\\apps\\\\backend\\\\src\\\\services\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\claudio.olivari\\\\OneDrive - Accenture\\\\Desktop\\\\APP\\\\apps\\\\backend\\\\src\\\\socket\")",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\claudio.olivari\\\\OneDrive - Accenture\\\\Desktop\\\\APP\" -Recurse -File | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"C:\\\\Users\\\\claudio.olivari\\\\OneDrive - Accenture\\\\Desktop\\\\APP\\\\\", \"\"\\) } | Sort-Object)"
+    ]
+  }
+}
