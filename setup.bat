@@ -31,8 +31,10 @@ if %errorlevel% neq 0 ( echo AVVISO: seed fallito ^(forse gia eseguito^), contin
 
 REM Mobile
 cd ..\..\apps\mobile
-echo [5/5] Installazione dipendenze mobile...
-call npm install
+echo [5/5] Pulizia e installazione dipendenze mobile...
+if exist node_modules ( rmdir /s /q node_modules )
+if exist .expo ( rmdir /s /q .expo )
+call npm install --legacy-peer-deps
 if %errorlevel% neq 0 ( echo ERRORE: npm install mobile fallito & pause & exit /b 1 )
 
 cd ..\..
