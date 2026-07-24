@@ -43,6 +43,7 @@ export default function TabsLayout() {
         tabBarStyle: styles.tabBar,
       }}
     >
+      {/* ── Visible tabs ─────────────────────────────────────────── */}
       <Tabs.Screen
         name="explore/index"
         options={{
@@ -58,11 +59,6 @@ export default function TabsLayout() {
             <TabIcon focused={focused} icon="map-outline" iconFocused="map" />
           ),
         }}
-      />
-      {/* matches/index is hidden — its content is merged into chat/index */}
-      <Tabs.Screen
-        name="matches/index"
-        options={{ href: null }}
       />
       <Tabs.Screen
         name="chat/index"
@@ -80,6 +76,13 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      {/* ── Hidden sub-routes (accessible but no tab icon) ────────── */}
+      <Tabs.Screen name="matches/index"       options={{ href: null }} />
+      <Tabs.Screen name="chat/[matchId]"      options={{ href: null }} />
+      <Tabs.Screen name="explore/[profileId]" options={{ href: null }} />
+      <Tabs.Screen name="profile/settings"    options={{ href: null }} />
+      <Tabs.Screen name="profile/edit"        options={{ href: null }} />
     </Tabs>
   );
 }

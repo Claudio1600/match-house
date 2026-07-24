@@ -45,12 +45,12 @@ function buildMapHtml(properties: LandlordProfile[]): string {
 <html>
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}
-#map{width:100%;height:100%}
+html,body{width:100vw;height:100vh;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}
+#map{position:fixed;top:0;left:0;width:100vw;height:100vh}
 .pin{background:#fff;border:1.5px solid rgba(0,0,0,0.12);border-radius:24px;padding:5px 11px;
   font-size:12px;font-weight:700;color:#111;white-space:nowrap;
   box-shadow:0 2px 8px rgba(0,0,0,0.14);cursor:pointer;transition:all .15s}
@@ -183,13 +183,16 @@ export default function MapScreen() {
       {/* Map */}
       <WebView
         ref={webViewRef}
-        source={{ html }}
+        source={{ html, baseUrl: "https://unpkg.com" }}
         style={styles.map}
         onMessage={handleMessage}
         javaScriptEnabled
         domStorageEnabled
         originWhitelist={["*"]}
         mixedContentMode="always"
+        allowFileAccess
+        allowUniversalAccessFromFileURLs
+        allowFileAccessFromFileURLs
       />
     </View>
   );
