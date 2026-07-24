@@ -14,17 +14,23 @@ interface LoginPayload {
 
 interface AuthResponse {
   user: User;
-  tokens: AuthTokens;
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface RegisterResponse {
+  message: string;
+  user: Pick<User, "id" | "email" | "userType" | "isVerified">;
 }
 
 interface VerifyEmailPayload {
   email: string;
-  code: string;
+  otp: string;
 }
 
 export const authService = {
-  register: async (payload: RegisterPayload): Promise<AuthResponse> => {
-    const { data } = await api.post<AuthResponse>("/auth/register", payload);
+  register: async (payload: RegisterPayload): Promise<RegisterResponse> => {
+    const { data } = await api.post<RegisterResponse>("/auth/register", payload);
     return data;
   },
 
@@ -34,7 +40,7 @@ export const authService = {
   },
 
   verifyEmail: async (payload: VerifyEmailPayload): Promise<void> => {
-    await api.post("/auth/verify-email", payload);
+    await api.post("/auth/verify-email", { email: payload.email, otp: payload.otp });
   },
 
   resendVerification: async (email: string): Promise<void> => {

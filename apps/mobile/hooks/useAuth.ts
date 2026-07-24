@@ -8,12 +8,10 @@ export function useAuth() {
     useAuthStore();
 
   const login = async (email: string, password: string) => {
-    const { user: u, tokens } = await authService.login({ email, password });
-    await setAuth(u, tokens.accessToken, tokens.refreshToken);
+    const { user: u, accessToken, refreshToken } = await authService.login({ email, password });
+    await setAuth(u, accessToken, refreshToken);
     if (!u.isVerified) {
-      router.replace("/(auth)/verify-email");
-    } else if (u.userType === "LANDLORD") {
-      router.replace("/(tabs)/explore");
+      router.replace({ pathname: "/(auth)/verify-email", params: { email } });
     } else {
       router.replace("/(tabs)/explore");
     }
@@ -24,13 +22,8 @@ export function useAuth() {
     password: string,
     userType: UserType
   ) => {
-    const { user: u, tokens } = await authService.register({
-      email,
-      password,
-      userType,
-    });
-    await setAuth(u, tokens.accessToken, tokens.refreshToken);
-    router.replace("/(auth)/verify-email");
+    await authService.register({ email, password, userType });
+    router.replace({ pathname: "/(auth)/verify-email", params: { email } });
   };
 
   const logout = async () => {

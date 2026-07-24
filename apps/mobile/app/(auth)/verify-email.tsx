@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "../../components/Button";
@@ -18,6 +18,8 @@ import { colors, radius, spacing, typography } from "../../utils/theme";
 
 export default function VerifyEmailScreen() {
   const { user } = useAuth();
+  const params = useLocalSearchParams<{ email?: string }>();
+  const email = params.email || user?.email || "";
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -48,17 +50,19 @@ export default function VerifyEmailScreen() {
       Alert.alert("Codice incompleto", "Inserisci il codice a 6 cifre");
       return;
     }
-    if (!user?.email) return;
+    if (!email) {
+      Alert.alert("Errore", "Email non trovata, torna alla registrazione");
+      return;
+    }
 
     setLoading(true);
     try {
-      await authService.verifyEmail({ email: user.email, code: fullCode });
-      // Navigate to onboarding based on user type
-      if (user.userType === "LANDLORD") {
-        router.replace("/(auth)/onboarding/landlord/step1-basics");
-      } else {
-        router.replace("/(auth)/onboarding/seeker/step1-personal");
-      }
+      await authService.verifyEmail({ email, otp: fullCode });
+      Alert.alert(
+        "Email verificata!",
+        "Accedi per continuare.",
+        [{ text: "Accedi", onPress: () => router.replace("/(auth)/login") }]
+      );
     } catch {
       Alert.alert("Codice errato", "Verifica il codice e riprova");
     } finally {
@@ -67,10 +71,10 @@ export default function VerifyEmailScreen() {
   };
 
   const handleResend = async () => {
-    if (!user?.email) return;
+    if (!email) return;
     setResendLoading(true);
     try {
-      await authService.resendVerification(user.email);
+      await authService.resendVerification(email);
       Alert.alert("Email inviata", "Controlla la tua casella di posta");
     } catch {
       Alert.alert("Errore", "Non è stato possibile inviare il codice");
@@ -89,7 +93,7 @@ export default function VerifyEmailScreen() {
           <Text style={styles.title}>Verifica l'email</Text>
           <Text style={styles.subtitle}>
             Abbiamo inviato un codice a 6 cifre a{"\n"}
-            <Text style={styles.email}>{user?.email}</Text>
+            <Text style={styles.email}>{email}</Text>
           </Text>
 
           <View style={styles.codeRow}>
