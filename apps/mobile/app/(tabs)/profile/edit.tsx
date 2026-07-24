@@ -69,7 +69,13 @@ export default function EditProfileScreen() {
       });
       router.back();
     },
-    onError: () => Alert.alert("Errore", "Salvataggio fallito"),
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? (err as Error)?.message
+        ?? "Salvataggio fallito";
+      Alert.alert("Errore", msg);
+    },
   });
 
   const uploadPhotoMutation = useMutation({
