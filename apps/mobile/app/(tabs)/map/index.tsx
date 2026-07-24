@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import api from "../../../services/api";
 import { LandlordProfile } from "../../../types";
 import { colors, radius, spacing } from "../../../utils/theme";
+import { LEAFLET_JS, LEAFLET_CSS } from "../../../utils/leafletBundle";
 
 interface PropertiesResponse {
   properties: LandlordProfile[];
@@ -45,39 +46,38 @@ function buildMapHtml(properties: LandlordProfile[]): string {
 <html>
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
+${LEAFLET_CSS}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100vw;height:100vh;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}
 #map{position:fixed;top:0;left:0;width:100vw;height:100vh}
 .pin{background:#fff;border:1.5px solid rgba(0,0,0,0.12);border-radius:24px;padding:5px 11px;
   font-size:12px;font-weight:700;color:#111;white-space:nowrap;
-  box-shadow:0 2px 8px rgba(0,0,0,0.14);cursor:pointer;transition:all .15s}
+  box-shadow:0 2px 8px rgba(0,0,0,0.14);cursor:pointer}
 .pin.active{background:#111;border-color:#111;color:#fff}
 .leaflet-popup-content-wrapper{border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,0.13);padding:0;overflow:hidden}
 .leaflet-popup-content{margin:0;min-width:220px}
 .leaflet-popup-tip-container{display:none}
 .card{padding:14px 16px 0}
 .card-title{font-size:15px;font-weight:600;color:#111;margin-bottom:5px}
-.card-row{font-size:12px;color:#666;margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.card-row{font-size:12px;color:#666;margin-bottom:3px}
 .card-price{font-size:18px;font-weight:700;color:#111;margin:6px 0}
-.card-btn{display:block;width:calc(100% - 0px);padding:11px;background:#111;color:#fff;border:none;
-  font-size:13px;font-weight:600;cursor:pointer;margin:10px 0 0;border-radius:0 0 16px 16px;
-  text-align:center;letter-spacing:0.2px}
+.card-btn{display:block;width:100%;padding:11px;background:#111;color:#fff;border:none;
+  font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;border-radius:0 0 16px 16px;text-align:center}
 .leaflet-control-zoom{border:none!important;box-shadow:0 2px 8px rgba(0,0,0,0.12)!important}
-.leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important;
-  font-size:18px!important;color:#111!important;background:#fff!important}
+.leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important;font-size:18px!important;color:#111!important;background:#fff!important}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <script>
+${LEAFLET_JS}
+</script>
+<script>
 var data=${markers};
 var map=L.map('map',{zoomControl:false}).setView([41.9,12.5],6);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:''}).addTo(map);
 L.control.zoom({position:'bottomright'}).addTo(map);
-
 var openPopup=null;
 data.forEach(function(p){
   var icon=L.divIcon({className:'',html:'<div class="pin" id="pin-'+p.id+'">€'+p.rent+'</div>',iconAnchor:[28,16]});
@@ -87,22 +87,22 @@ data.forEach(function(p){
     var pin=document.getElementById('pin-'+p.id);
     if(pin)pin.classList.add('active');
     if(openPopup)map.closePopup(openPopup);
-    openPopup=L.popup({offset:[0,-8],closeButton:false,className:'custom-popup'})
+    openPopup=L.popup({offset:[0,-8],closeButton:false})
       .setLatLng([p.lat,p.lng])
       .setContent('<div class="card">'+
         '<div class="card-title">'+p.title+'</div>'+
         '<div class="card-row">📍 '+p.address+', '+p.city+'</div>'+
-        '<div class="card-row">🏠 '+p.rooms+' '+(p.rooms===1?'stanza disponibile':'stanze disponibili')+'</div>'+
+        '<div class="card-row">🏠 '+p.rooms+' '+(p.rooms===1?'stanza':'stanze')+' disponibili</div>'+
         '<div class="card-price">€'+p.rent+'/mese</div>'+
         '</div>'+
-        '<button class="card-btn" onclick="open(\''+p.id+'\')">Vedi profilo completo</button>'
+        '<button class="card-btn" onclick="openProfile(\''+p.id+'\')">Vedi profilo completo</button>'
       ).openOn(map);
   });
 });
 map.on('click',function(){
   document.querySelectorAll('.pin').forEach(function(el){el.classList.remove('active')});
 });
-function open(id){
+function openProfile(id){
   if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'open',id:id}));}
 }
 </script>
@@ -115,7 +115,7 @@ export default function MapScreen() {
   const [searchText, setSearchText] = useState("");
   const [activeCity, setActiveCity] = useState("");
 
-  const { data: properties = [], isLoading, refetch } = useQuery({
+  const { data: properties = [], isLoading } = useQuery({
     queryKey: ["map-properties", activeCity],
     queryFn: () => fetchMapProperties(activeCity),
   });
@@ -129,22 +129,15 @@ export default function MapScreen() {
         router.push({ pathname: "/(tabs)/explore/[profileId]", params: { profileId: id } });
       }
     } catch {
-      // ignore malformed messages
+      // ignore
     }
   }, []);
 
-  const handleSearch = () => {
-    setActiveCity(searchText.trim());
-  };
-
-  const handleClear = () => {
-    setSearchText("");
-    setActiveCity("");
-  };
+  const handleSearch = () => setActiveCity(searchText.trim());
+  const handleClear = () => { setSearchText(""); setActiveCity(""); };
 
   return (
     <View style={styles.container}>
-      {/* Search bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={16} color={colors.textMuted} />
@@ -168,7 +161,6 @@ export default function MapScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Count badge */}
       <View style={styles.badge}>
         {isLoading ? (
           <ActivityIndicator size="small" color={colors.textSecondary} />
@@ -180,19 +172,15 @@ export default function MapScreen() {
         )}
       </View>
 
-      {/* Map */}
       <WebView
         ref={webViewRef}
-        source={{ html, baseUrl: "https://unpkg.com" }}
+        source={{ html }}
         style={styles.map}
         onMessage={handleMessage}
         javaScriptEnabled
         domStorageEnabled
         originWhitelist={["*"]}
         mixedContentMode="always"
-        allowFileAccess
-        allowUniversalAccessFromFileURLs
-        allowFileAccessFromFileURLs
       />
     </View>
   );
@@ -242,11 +230,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
   },
-  searchBtnText: {
-    color: colors.background,
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  searchBtnText: { color: colors.background, fontSize: 14, fontWeight: "600" },
   badge: {
     position: "absolute",
     top: Platform.OS === "android" ? 104 : 112,
@@ -263,9 +247,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
   },
-  badgeText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
+  badgeText: { fontSize: 12, color: colors.textSecondary },
   map: { flex: 1 },
 });
