@@ -106,6 +106,8 @@ export async function register(req: Request, res: Response): Promise<void> {
     expiresAt: Date.now() + 15 * 60 * 1000,
   });
 
+  console.log(`[DEV] OTP per ${normalizedEmail}: ${otp}`);
+
   try {
     await sendVerificationEmail(normalizedEmail, otp);
   } catch (err) {
@@ -244,6 +246,34 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
   });
 
   res.json({ message: "Email verificata con successo" });
+}
+
+export async function resendVerification(req: Request, res: Response): Promise<void> {
+  const email = req.body?.email;
+  if (!email) {
+    res.status(400).json({ error: "Email mancante" });
+    return;
+  }
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (!user || user.isVerified) {
+    res.json({ message: "OK" });
+    return;
+  }
+
+  const otp = generateOtp();
+  otpStore.set(normalizedEmail, { otp, expiresAt: Date.now() + 15 * 60 * 1000 });
+
+  console.log(`[DEV] OTP per ${normalizedEmail}: ${otp}`);
+
+  try {
+    await sendVerificationEmail(normalizedEmail, otp);
+  } catch (err) {
+    console.error("Errore invio email verifica:", err);
+  }
+
+  res.json({ message: "Codice inviato" });
 }
 
 export async function forgotPassword(
