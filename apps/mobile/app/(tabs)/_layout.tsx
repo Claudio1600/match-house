@@ -40,7 +40,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="explore"
+        name="explore/index"
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} label="Esplora" icon="◎" />
@@ -48,7 +48,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="matches"
+        name="matches/index"
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} label="Match" icon="◇" />
@@ -56,7 +56,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="chat/index"
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} label="Chat" icon="◻" />
@@ -64,7 +64,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} label="Profilo" icon="◯" />
