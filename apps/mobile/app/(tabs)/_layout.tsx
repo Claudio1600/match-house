@@ -1,22 +1,27 @@
 import React from "react";
-import { Tabs } from "expo-router";
-import { useAuthStore } from "../../stores/authStore";
-import { Redirect } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { View, Text, StyleSheet } from "react-native";
-import { colors, spacing, typography } from "../../utils/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuthStore } from "../../stores/authStore";
+import { colors, spacing } from "../../utils/theme";
+
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
 interface TabIconProps {
   focused: boolean;
   label: string;
-  icon: string;
+  icon: IconName;
+  iconFocused: IconName;
 }
 
-function TabIcon({ focused, label, icon }: TabIconProps) {
+function TabIcon({ focused, label, icon, iconFocused }: TabIconProps) {
   return (
     <View style={styles.tabItem}>
-      <Text style={[styles.tabIconText, focused && styles.tabIconTextActive]}>
-        {icon}
-      </Text>
+      <Ionicons
+        name={focused ? iconFocused : icon}
+        size={22}
+        color={focused ? colors.textPrimary : colors.textMuted}
+      />
       <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
         {label}
       </Text>
@@ -43,7 +48,15 @@ export default function TabsLayout() {
         name="explore/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Esplora" icon="◎" />
+            <TabIcon focused={focused} label="Esplora" icon="grid-outline" iconFocused="grid" />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="map/index"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} label="Mappa" icon="map-outline" iconFocused="map" />
           ),
         }}
       />
@@ -51,7 +64,7 @@ export default function TabsLayout() {
         name="matches/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Match" icon="◇" />
+            <TabIcon focused={focused} label="Match" icon="heart-outline" iconFocused="heart" />
           ),
         }}
       />
@@ -59,7 +72,7 @@ export default function TabsLayout() {
         name="chat/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Chat" icon="◻" />
+            <TabIcon focused={focused} label="Chat" icon="chatbubbles-outline" iconFocused="chatbubbles" />
           ),
         }}
       />
@@ -67,7 +80,7 @@ export default function TabsLayout() {
         name="profile/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Profilo" icon="◯" />
+            <TabIcon focused={focused} label="Profilo" icon="person-outline" iconFocused="person" />
           ),
         }}
       />
@@ -80,22 +93,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    height: 60,
+    height: 64,
     elevation: 0,
     shadowOpacity: 0,
   },
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 3,
     paddingTop: spacing.xs,
-  },
-  tabIconText: {
-    fontSize: 18,
-    color: colors.textMuted,
-  },
-  tabIconTextActive: {
-    color: colors.textPrimary,
   },
   tabLabel: {
     fontSize: 10,
