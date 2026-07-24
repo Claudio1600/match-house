@@ -93,7 +93,8 @@ export async function discover(req: Request, res: Response): Promise<void> {
       );
     });
 
-    res.json(results.slice(0, DISCOVER_LIMIT));
+    const sliced = results.slice(0, DISCOVER_LIMIT);
+    res.json({ profiles: sliced, hasMore: results.length > DISCOVER_LIMIT });
     return;
   }
 
@@ -126,5 +127,6 @@ export async function discover(req: Request, res: Response): Promise<void> {
     );
   });
 
-  res.json(sortedSeekers.slice(0, DISCOVER_LIMIT));
+  const sliced = sortedSeekers.slice(0, DISCOVER_LIMIT);
+  res.json({ profiles: sliced, hasMore: seekerProfiles.length > DISCOVER_LIMIT });
 }

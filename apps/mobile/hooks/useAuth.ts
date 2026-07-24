@@ -22,8 +22,13 @@ export function useAuth() {
     password: string,
     userType: UserType
   ) => {
-    await authService.register({ email, password, userType });
-    router.replace({ pathname: "/(auth)/verify-email", params: { email } });
+    const { user: u } = await authService.register({ email, password, userType });
+    if (u.isVerified) {
+      // dev mode: auto-verified, do login immediately
+      await login(email, password);
+    } else {
+      router.replace({ pathname: "/(auth)/verify-email", params: { email } });
+    }
   };
 
   const logout = async () => {

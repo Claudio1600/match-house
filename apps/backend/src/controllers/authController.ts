@@ -91,31 +91,37 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
+  const isDevMode = process.env.NODE_ENV !== "production";
+
   const user = await prisma.user.create({
     data: {
       email: normalizedEmail,
       passwordHash,
       userType,
+      isVerified: isDevMode, // auto-verify in development
     },
     select: { id: true, email: true, userType: true, isVerified: true },
   });
 
-  const otp = generateOtp();
-  otpStore.set(normalizedEmail, {
-    otp,
-    expiresAt: Date.now() + 15 * 60 * 1000,
-  });
-
-  console.log(`[DEV] OTP per ${normalizedEmail}: ${otp}`);
-
-  try {
-    await sendVerificationEmail(normalizedEmail, otp);
-  } catch (err) {
-    console.error("Errore invio email verifica:", err);
+  if (!isDevMode) {
+    const otp = generateOtp();
+    otpStore.set(normalizedEmail, {
+      otp,
+      expiresAt: Date.now() + 15 * 60 * 1000,
+    });
+    try {
+      await sendVerificationEmail(normalizedEmail, otp);
+    } catch (err) {
+      console.error("Errore invio email verifica:", err);
+    }
+  } else {
+    console.log(`[DEV] Auto-verifica attiva: ${normalizedEmail} verificato automaticamente`);
   }
 
   res.status(201).json({
-    message: "Registrazione completata. Controlla la tua email per il codice OTP.",
+    message: isDevMode
+      ? "Registrazione completata. Puoi accedere subito."
+      : "Registrazione completata. Controlla la tua email per il codice OTP.",
     user,
   });
 }
