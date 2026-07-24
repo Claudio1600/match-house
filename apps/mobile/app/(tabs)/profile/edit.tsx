@@ -85,7 +85,7 @@ export default function EditProfileScreen() {
 
   const handlePickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.images,
       quality: 0.85,
     });
     if (!result.canceled) {
@@ -102,13 +102,17 @@ export default function EditProfileScreen() {
 
   const handleSave = () => {
     if (isLandlord) {
+      const rentNum = parseFloat(rent);
       updateMutation.mutate({
-        description,
-        rent: parseFloat(rent),
-        houseRules: houseRules || undefined,
+        ...(description.trim() ? { description: description.trim() } : {}),
+        ...(rent && !isNaN(rentNum) ? { rent: rentNum } : {}),
+        ...(houseRules.trim() ? { houseRules: houseRules.trim() } : {}),
       });
     } else {
-      updateMutation.mutate({ bio, occupation });
+      updateMutation.mutate({
+        ...(bio.trim() ? { bio: bio.trim() } : {}),
+        ...(occupation.trim() ? { occupation: occupation.trim() } : {}),
+      });
     }
   };
 
