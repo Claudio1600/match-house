@@ -10,9 +10,9 @@ import {
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { profileService } from "../../../services/profileService";
 import { useAuthStore } from "../../../stores/authStore";
-import { useAuth } from "../../../hooks/useAuth";
 import { LoadingScreen } from "../../../components/LoadingScreen";
 import { Badge } from "../../../components/Badge";
 import { LandlordProfile, SeekerProfile } from "../../../types";
@@ -20,7 +20,6 @@ import { colors, radius, spacing, typography } from "../../../utils/theme";
 
 export default function ProfileScreen() {
   const { user } = useAuthStore();
-  const { logout } = useAuth();
   const isLandlord = user?.userType === "LANDLORD";
 
   const { data: profile, isLoading } = useQuery({
@@ -62,7 +61,7 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
             style={styles.settingsBtn}
           >
-            <Text style={styles.settingsBtnText}>⚙</Text>
+            <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -199,13 +198,15 @@ export default function ProfileScreen() {
             </>
           ) : null}
 
-          {/* Logout */}
+          {/* Settings shortcut */}
           <TouchableOpacity
-            style={styles.logoutBtn}
-            onPress={() => logout()}
+            style={styles.settingsShortcut}
+            onPress={() => router.push("/(tabs)/profile/settings")}
             activeOpacity={0.7}
           >
-            <Text style={styles.logoutText}>Esci dall'account</Text>
+            <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.settingsShortcutText}>Impostazioni e account</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -235,7 +236,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  settingsBtnText: { fontSize: 18, color: colors.textSecondary },
   heroContainer: {
     width: "100%",
     height: 280,
@@ -286,14 +286,21 @@ const styles = StyleSheet.create({
   },
   bodyText: { ...typography.body, color: colors.textPrimary },
   badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  logoutBtn: {
+  settingsShortcut: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     marginTop: spacing.xl,
-    height: 48,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: colors.surface,
   },
-  logoutText: { ...typography.body, color: colors.pass },
+  settingsShortcutText: {
+    ...typography.body,
+    color: colors.textPrimary,
+    flex: 1,
+  },
 });

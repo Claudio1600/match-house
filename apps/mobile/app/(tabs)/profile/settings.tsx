@@ -10,44 +10,63 @@ import {
   Alert,
 } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../../../stores/authStore";
 import { useAuth } from "../../../hooks/useAuth";
 import { colors, radius, spacing, typography } from "../../../utils/theme";
 
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
 interface SettingRowProps {
+  icon: IconName;
   label: string;
   description?: string;
   onPress?: () => void;
   rightElement?: React.ReactNode;
   destructive?: boolean;
+  isLast?: boolean;
 }
 
 function SettingRow({
+  icon,
   label,
   description,
   onPress,
   rightElement,
   destructive = false,
+  isLast = false,
 }: SettingRowProps) {
   return (
-    <TouchableOpacity
-      style={styles.settingRow}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-      disabled={!onPress && !rightElement}
-    >
-      <View style={styles.settingContent}>
-        <Text style={[styles.settingLabel, destructive && styles.destructiveText]}>
-          {label}
-        </Text>
-        {description ? (
-          <Text style={styles.settingDescription}>{description}</Text>
+    <>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={onPress}
+        activeOpacity={onPress ? 0.7 : 1}
+        disabled={!onPress && !rightElement}
+      >
+        <View style={[styles.iconWrap, destructive && styles.iconWrapDestructive]}>
+          <Ionicons
+            name={icon}
+            size={18}
+            color={destructive ? colors.pass : colors.textSecondary}
+          />
+        </View>
+        <View style={styles.rowContent}>
+          <Text style={[styles.rowLabel, destructive && styles.destructiveText]}>
+            {label}
+          </Text>
+          {description ? (
+            <Text style={styles.rowDesc}>{description}</Text>
+          ) : null}
+        </View>
+        {rightElement ? (
+          rightElement
+        ) : onPress ? (
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         ) : null}
-      </View>
-      {rightElement ? rightElement : onPress ? (
-        <Text style={styles.chevron}>›</Text>
-      ) : null}
-    </TouchableOpacity>
+      </TouchableOpacity>
+      {!isLast && <View style={styles.divider} />}
+    </>
   );
 }
 
@@ -66,12 +85,8 @@ export default function SettingsScreen() {
         {
           text: "Elimina",
           style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "Non implementato",
-              "Contatta support@matchhouse.app per eliminare il tuo account"
-            );
-          },
+          onPress: () =>
+            Alert.alert("Non disponibile", "Contatta support@matchhouse.app"),
         },
       ]
     );
@@ -79,108 +94,108 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Text style={styles.backText}>← Indietro</Text>
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Impostazioni</Text>
+        <View style={styles.backBtn} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+
         {/* Account */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ACCOUNT</Text>
-          <View style={styles.card}>
-            <SettingRow
-              label="Email"
-              description={user?.email}
-            />
-            <View style={styles.divider} />
-            <SettingRow
-              label="Tipo account"
-              description={
-                user?.userType === "LANDLORD"
-                  ? "Proprietario"
-                  : "Cerca stanza"
-              }
-            />
-          </View>
+        <Text style={styles.sectionLabel}>ACCOUNT</Text>
+        <View style={styles.card}>
+          <SettingRow
+            icon="mail-outline"
+            label="Email"
+            description={user?.email}
+          />
+          <SettingRow
+            icon="person-outline"
+            label="Tipo account"
+            description={user?.userType === "LANDLORD" ? "Proprietario" : "Cerca stanza"}
+            isLast
+          />
+        </View>
+
+        {/* Profile */}
+        <Text style={styles.sectionLabel}>PROFILO</Text>
+        <View style={styles.card}>
+          <SettingRow
+            icon="create-outline"
+            label="Modifica profilo"
+            onPress={() => router.push("/(tabs)/profile/edit")}
+            isLast
+          />
         </View>
 
         {/* Notifications */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>NOTIFICHE</Text>
-          <View style={styles.card}>
-            <SettingRow
-              label="Notifiche push"
-              description="Nuovi match e messaggi"
-              rightElement={
-                <Switch
-                  value={notifications}
-                  onValueChange={setNotifications}
-                  trackColor={{
-                    false: colors.border,
-                    true: colors.smash,
-                  }}
-                  thumbColor={colors.background}
-                />
-              }
-            />
-            <View style={styles.divider} />
-            <SettingRow
-              label="Email"
-              description="Riepilogo settimanale"
-              rightElement={
-                <Switch
-                  value={emailNotifications}
-                  onValueChange={setEmailNotifications}
-                  trackColor={{
-                    false: colors.border,
-                    true: colors.smash,
-                  }}
-                  thumbColor={colors.background}
-                />
-              }
-            />
-          </View>
+        <Text style={styles.sectionLabel}>NOTIFICHE</Text>
+        <View style={styles.card}>
+          <SettingRow
+            icon="notifications-outline"
+            label="Notifiche push"
+            description="Nuovi match e messaggi"
+            rightElement={
+              <Switch
+                value={notifications}
+                onValueChange={setNotifications}
+                trackColor={{ false: colors.border, true: colors.smash }}
+                thumbColor={colors.background}
+              />
+            }
+          />
+          <SettingRow
+            icon="mail-unread-outline"
+            label="Email"
+            description="Riepilogo settimanale"
+            rightElement={
+              <Switch
+                value={emailNotifications}
+                onValueChange={setEmailNotifications}
+                trackColor={{ false: colors.border, true: colors.smash }}
+                thumbColor={colors.background}
+              />
+            }
+            isLast
+          />
         </View>
 
         {/* Privacy */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PRIVACY</Text>
-          <View style={styles.card}>
-            <SettingRow
-              label="Termini di servizio"
-              onPress={() =>
-                Alert.alert("Termini di servizio", "Apertura browser...")
-              }
-            />
-            <View style={styles.divider} />
-            <SettingRow
-              label="Informativa sulla privacy"
-              onPress={() =>
-                Alert.alert("Privacy policy", "Apertura browser...")
-              }
-            />
-          </View>
+        <Text style={styles.sectionLabel}>PRIVACY E LEGALE</Text>
+        <View style={styles.card}>
+          <SettingRow
+            icon="document-text-outline"
+            label="Termini di servizio"
+            onPress={() => Alert.alert("Termini di servizio", "Apertura browser...")}
+          />
+          <SettingRow
+            icon="shield-checkmark-outline"
+            label="Informativa sulla privacy"
+            onPress={() => Alert.alert("Privacy policy", "Apertura browser...")}
+            isLast
+          />
         </View>
 
         {/* Danger zone */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ALTRO</Text>
-          <View style={styles.card}>
-            <SettingRow
-              label="Esci dall'account"
-              onPress={() => logout()}
-              destructive
-            />
-            <View style={styles.divider} />
-            <SettingRow
-              label="Elimina account"
-              onPress={handleDeleteAccount}
-              destructive
-            />
-          </View>
+        <Text style={styles.sectionLabel}>ACCOUNT</Text>
+        <View style={styles.card}>
+          <SettingRow
+            icon="log-out-outline"
+            label="Esci dall'account"
+            onPress={() => logout()}
+            destructive
+          />
+          <SettingRow
+            icon="trash-outline"
+            label="Elimina account"
+            onPress={handleDeleteAccount}
+            destructive
+            isLast
+          />
         </View>
 
         <Text style={styles.version}>Match House v1.0.0</Text>
@@ -190,48 +205,67 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: colors.surface },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backText: { ...typography.body, color: colors.textSecondary },
+  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   headerTitle: { ...typography.h3, color: colors.textPrimary },
-  section: { marginTop: spacing.lg, paddingHorizontal: spacing.lg },
-  sectionTitle: {
+
+  scroll: { paddingBottom: spacing.xxl },
+  sectionLabel: {
     ...typography.label,
     color: colors.textMuted,
-    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   card: {
+    marginHorizontal: spacing.lg,
     backgroundColor: colors.background,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
   },
-  settingRow: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
     padding: spacing.md,
     gap: spacing.md,
-    minHeight: 56,
+    minHeight: 52,
   },
-  settingContent: { flex: 1, gap: 2 },
-  settingLabel: { ...typography.body, color: colors.textPrimary },
+  iconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.sm + 2,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconWrapDestructive: {
+    backgroundColor: colors.passBg,
+  },
+  rowContent: { flex: 1, gap: 2 },
+  rowLabel: { ...typography.body, color: colors.textPrimary },
   destructiveText: { color: colors.pass },
-  settingDescription: { ...typography.caption, color: colors.textMuted },
-  chevron: { ...typography.h3, color: colors.textMuted },
-  divider: { height: 1, backgroundColor: colors.border, marginLeft: spacing.md },
+  rowDesc: { ...typography.caption, color: colors.textMuted },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginLeft: spacing.md + 34 + spacing.md,
+  },
   version: {
     ...typography.caption,
     color: colors.textMuted,
     textAlign: "center",
-    padding: spacing.xl,
+    paddingVertical: spacing.xl,
   },
 });

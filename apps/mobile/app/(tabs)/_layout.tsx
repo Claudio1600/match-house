@@ -59,19 +59,16 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* matches/index is hidden — its content is merged into chat/index */}
       <Tabs.Screen
         name="matches/index"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon="heart-outline" iconFocused="heart" />
-          ),
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="chat/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon="chatbubbles-outline" iconFocused="chatbubbles" />
+            <TabIcon focused={focused} icon="heart-outline" iconFocused="heart" />
           ),
         }}
       />

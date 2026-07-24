@@ -1,31 +1,20 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Dimensions,
   ActivityIndicator,
   Platform,
 } from "react-native";
-import MapView, { Marker, Callout, Region } from "react-native-maps";
+import WebView, { WebViewMessageEvent } from "react-native-webview";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import api from "../../../services/api";
 import { LandlordProfile } from "../../../types";
-import { colors, radius, spacing, typography } from "../../../utils/theme";
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
-
-const ITALY_REGION: Region = {
-  latitude: 41.9,
-  longitude: 12.5,
-  latitudeDelta: 8,
-  longitudeDelta: 8,
-};
+import { colors, radius, spacing } from "../../../utils/theme";
 
 interface PropertiesResponse {
   properties: LandlordProfile[];
@@ -38,51 +27,119 @@ async function fetchMapProperties(city: string): Promise<LandlordProfile[]> {
   return data.properties ?? [];
 }
 
+function buildMapHtml(properties: LandlordProfile[]): string {
+  const markers = JSON.stringify(
+    properties.map((p) => ({
+      id: p.id,
+      lat: p.latitude,
+      lng: p.longitude,
+      rent: Math.round(p.rent),
+      title: p.title,
+      address: p.address,
+      city: p.city,
+      rooms: p.availableRooms,
+    }))
+  );
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}
+#map{width:100%;height:100%}
+.pin{background:#fff;border:1.5px solid rgba(0,0,0,0.12);border-radius:24px;padding:5px 11px;
+  font-size:12px;font-weight:700;color:#111;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,0.14);cursor:pointer;transition:all .15s}
+.pin.active{background:#111;border-color:#111;color:#fff}
+.leaflet-popup-content-wrapper{border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,0.13);padding:0;overflow:hidden}
+.leaflet-popup-content{margin:0;min-width:220px}
+.leaflet-popup-tip-container{display:none}
+.card{padding:14px 16px 0}
+.card-title{font-size:15px;font-weight:600;color:#111;margin-bottom:5px}
+.card-row{font-size:12px;color:#666;margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.card-price{font-size:18px;font-weight:700;color:#111;margin:6px 0}
+.card-btn{display:block;width:calc(100% - 0px);padding:11px;background:#111;color:#fff;border:none;
+  font-size:13px;font-weight:600;cursor:pointer;margin:10px 0 0;border-radius:0 0 16px 16px;
+  text-align:center;letter-spacing:0.2px}
+.leaflet-control-zoom{border:none!important;box-shadow:0 2px 8px rgba(0,0,0,0.12)!important}
+.leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important;
+  font-size:18px!important;color:#111!important;background:#fff!important}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+var data=${markers};
+var map=L.map('map',{zoomControl:false}).setView([41.9,12.5],6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:''}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+var openPopup=null;
+data.forEach(function(p){
+  var icon=L.divIcon({className:'',html:'<div class="pin" id="pin-'+p.id+'">€'+p.rent+'</div>',iconAnchor:[28,16]});
+  var m=L.marker([p.lat,p.lng],{icon:icon}).addTo(map);
+  m.on('click',function(){
+    document.querySelectorAll('.pin').forEach(function(el){el.classList.remove('active')});
+    var pin=document.getElementById('pin-'+p.id);
+    if(pin)pin.classList.add('active');
+    if(openPopup)map.closePopup(openPopup);
+    openPopup=L.popup({offset:[0,-8],closeButton:false,className:'custom-popup'})
+      .setLatLng([p.lat,p.lng])
+      .setContent('<div class="card">'+
+        '<div class="card-title">'+p.title+'</div>'+
+        '<div class="card-row">📍 '+p.address+', '+p.city+'</div>'+
+        '<div class="card-row">🏠 '+p.rooms+' '+(p.rooms===1?'stanza disponibile':'stanze disponibili')+'</div>'+
+        '<div class="card-price">€'+p.rent+'/mese</div>'+
+        '</div>'+
+        '<button class="card-btn" onclick="open(\''+p.id+'\')">Vedi profilo completo</button>'
+      ).openOn(map);
+  });
+});
+map.on('click',function(){
+  document.querySelectorAll('.pin').forEach(function(el){el.classList.remove('active')});
+});
+function open(id){
+  if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({action:'open',id:id}));}
+}
+</script>
+</body>
+</html>`;
+}
+
 export default function MapScreen() {
-  const mapRef = useRef<MapView>(null);
+  const webViewRef = useRef<WebView>(null);
   const [searchText, setSearchText] = useState("");
   const [activeCity, setActiveCity] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data: properties = [], isLoading } = useQuery({
+  const { data: properties = [], isLoading, refetch } = useQuery({
     queryKey: ["map-properties", activeCity],
     queryFn: () => fetchMapProperties(activeCity),
   });
 
-  const selectedProperty = properties.find((p) => p.id === selectedId);
+  const html = useMemo(() => buildMapHtml(properties), [properties]);
 
-  const handleSearch = useCallback(() => {
-    setActiveCity(searchText);
-    setSelectedId(null);
-    if (searchText.trim() && mapRef.current) {
-      mapRef.current.animateToRegion(
-        { latitude: 41.9, longitude: 12.5, latitudeDelta: 3, longitudeDelta: 3 },
-        800
-      );
+  const handleMessage = useCallback((event: WebViewMessageEvent) => {
+    try {
+      const { action, id } = JSON.parse(event.nativeEvent.data);
+      if (action === "open" && id) {
+        router.push({ pathname: "/(tabs)/explore/[profileId]", params: { profileId: id } });
+      }
+    } catch {
+      // ignore malformed messages
     }
-  }, [searchText]);
+  }, []);
 
-  const handleMarkerPress = useCallback(
-    (property: LandlordProfile) => {
-      setSelectedId(property.id);
-      mapRef.current?.animateToRegion(
-        {
-          latitude: property.latitude - 0.005,
-          longitude: property.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        },
-        400
-      );
-    },
-    []
-  );
+  const handleSearch = () => {
+    setActiveCity(searchText.trim());
+  };
 
   const handleClear = () => {
     setSearchText("");
     setActiveCity("");
-    setSelectedId(null);
-    mapRef.current?.animateToRegion(ITALY_REGION, 600);
   };
 
   return (
@@ -90,7 +147,7 @@ export default function MapScreen() {
       {/* Search bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <Ionicons name="search" size={16} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Cerca città (es. Milano, Roma…)"
@@ -101,20 +158,20 @@ export default function MapScreen() {
             returnKeyType="search"
           />
           {searchText.length > 0 && (
-            <TouchableOpacity onPress={handleClear}>
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>Cerca</Text>
+        <TouchableOpacity style={styles.searchBtn} onPress={handleSearch} activeOpacity={0.8}>
+          <Text style={styles.searchBtnText}>Cerca</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Results count */}
+      {/* Count badge */}
       <View style={styles.badge}>
         {isLoading ? (
-          <ActivityIndicator size="small" color={colors.textPrimary} />
+          <ActivityIndicator size="small" color={colors.textSecondary} />
         ) : (
           <Text style={styles.badgeText}>
             {properties.length} {properties.length === 1 ? "annuncio" : "annunci"}
@@ -124,140 +181,22 @@ export default function MapScreen() {
       </View>
 
       {/* Map */}
-      <MapView
-        ref={mapRef}
+      <WebView
+        ref={webViewRef}
+        source={{ html }}
         style={styles.map}
-        initialRegion={ITALY_REGION}
-        showsUserLocation
-        showsMyLocationButton={false}
-      >
-        {properties.map((p) => (
-          <Marker
-            key={p.id}
-            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
-            onPress={() => handleMarkerPress(p)}
-            tracksViewChanges={false}
-          >
-            <View style={[styles.pin, selectedId === p.id && styles.pinSelected]}>
-              <Text style={[styles.pinText, selectedId === p.id && styles.pinTextSelected]}>
-                €{p.rent}
-              </Text>
-            </View>
-          </Marker>
-        ))}
-      </MapView>
-
-      {/* Detail card */}
-      {selectedProperty && (
-        <View style={styles.card}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.cardScroll}
-          >
-            <PropertyCard
-              property={selectedProperty}
-              onClose={() => setSelectedId(null)}
-              onOpen={() =>
-                router.push({
-                  pathname: "/(tabs)/explore/[profileId]",
-                  params: { profileId: selectedProperty.id },
-                })
-              }
-            />
-          </ScrollView>
-        </View>
-      )}
-    </View>
-  );
-}
-
-interface PropertyCardProps {
-  property: LandlordProfile;
-  onClose: () => void;
-  onOpen: () => void;
-}
-
-function PropertyCard({ property, onClose, onOpen }: PropertyCardProps) {
-  const mainPhoto = property.photos?.find((ph) => ph.isMain) ?? property.photos?.[0];
-
-  return (
-    <View style={styles.propertyCard}>
-      {/* Close */}
-      <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-        <Ionicons name="close" size={18} color={colors.textSecondary} />
-      </TouchableOpacity>
-
-      {/* Photo placeholder */}
-      <View style={styles.photoBox}>
-        {mainPhoto ? (
-          <Text style={styles.photoPlaceholder}>📷</Text>
-        ) : (
-          <Ionicons name="home" size={36} color={colors.textMuted} />
-        )}
-      </View>
-
-      {/* Info */}
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle} numberOfLines={1}>{property.title}</Text>
-
-        <View style={styles.cardRow}>
-          <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.cardAddress} numberOfLines={1}>
-            {property.address}, {property.city}
-          </Text>
-        </View>
-
-        <View style={styles.cardRow}>
-          <Ionicons name="cash-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.cardPrice}>€{property.rent}/mese</Text>
-          {property.billsIncluded && (
-            <Text style={styles.cardTag}>spese incl.</Text>
-          )}
-        </View>
-
-        <View style={styles.cardRow}>
-          <Ionicons name="bed-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.cardMeta}>
-            {property.availableRooms} {property.availableRooms === 1 ? "stanza" : "stanze"} disponibili
-          </Text>
-          {property.squareMeters && (
-            <>
-              <Text style={styles.cardDot}>·</Text>
-              <Text style={styles.cardMeta}>{property.squareMeters} m²</Text>
-            </>
-          )}
-        </View>
-
-        {/* Features */}
-        <View style={styles.featuresRow}>
-          {property.furnished && <FeatureChip icon="cube-outline" label="Arredato" />}
-          {property.wifiIncluded && <FeatureChip icon="wifi" label="WiFi" />}
-          {property.petsAllowed && <FeatureChip icon="paw-outline" label="Animali" />}
-          {property.parkingAvailable && <FeatureChip icon="car-outline" label="Parcheggio" />}
-        </View>
-
-        <TouchableOpacity style={styles.openBtn} onPress={onOpen}>
-          <Text style={styles.openBtnText}>Vedi profilo completo</Text>
-          <Ionicons name="arrow-forward" size={14} color={colors.background} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-function FeatureChip({ icon, label }: { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string }) {
-  return (
-    <View style={styles.chip}>
-      <Ionicons name={icon} size={11} color={colors.textSecondary} />
-      <Text style={styles.chipText}>{label}</Text>
+        onMessage={handleMessage}
+        javaScriptEnabled
+        domStorageEnabled
+        originWhitelist={["*"]}
+        mixedContentMode="always"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-
   searchContainer: {
     position: "absolute",
     top: Platform.OS === "android" ? 48 : 56,
@@ -276,39 +215,38 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    paddingVertical: Platform.OS === "ios" ? spacing.sm : spacing.xs,
+    paddingVertical: Platform.OS === "ios" ? 10 : 8,
     gap: spacing.xs,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
     elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   searchInput: {
     flex: 1,
-    ...typography.body,
+    fontSize: 14,
     color: colors.textPrimary,
     padding: 0,
   },
-  searchButton: {
+  searchBtn: {
     backgroundColor: colors.textPrimary,
     borderRadius: radius.full,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: 10,
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
     elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  searchButtonText: {
+  searchBtnText: {
     color: colors.background,
-    fontWeight: "600",
     fontSize: 14,
+    fontWeight: "600",
   },
-
   badge: {
     position: "absolute",
-    top: 104,
+    top: Platform.OS === "android" ? 104 : 112,
     alignSelf: "center",
     zIndex: 10,
     backgroundColor: colors.background,
@@ -317,155 +255,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
+    elevation: 2,
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 4,
-    elevation: 2,
   },
   badgeText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-
-  map: { flex: 1 },
-
-  pin: {
-    backgroundColor: colors.background,
-    borderRadius: radius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  pinSelected: {
-    backgroundColor: colors.textPrimary,
-    borderColor: colors.textPrimary,
-  },
-  pinText: {
     fontSize: 12,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  pinTextSelected: {
-    color: colors.background,
-  },
-
-  card: {
-    position: "absolute",
-    bottom: spacing.xl,
-    left: 0,
-    right: 0,
-  },
-  cardScroll: { paddingHorizontal: spacing.md },
-
-  propertyCard: {
-    width: SCREEN_W - spacing.md * 2,
-    backgroundColor: colors.background,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: "row",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-    marginRight: spacing.sm,
-  },
-  closeBtn: {
-    position: "absolute",
-    top: spacing.sm,
-    right: spacing.sm,
-    zIndex: 1,
-    padding: 4,
-  },
-  photoBox: {
-    width: 90,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoPlaceholder: { fontSize: 30 },
-
-  cardInfo: {
-    flex: 1,
-    padding: spacing.md,
-    gap: 4,
-  },
-  cardTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    marginBottom: 2,
-    paddingRight: 24,
-  },
-  cardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  cardAddress: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  cardPrice: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  cardTag: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginLeft: 2,
-  },
-  cardMeta: {
-    ...typography.caption,
     color: colors.textSecondary,
   },
-  cardDot: {
-    color: colors.textMuted,
-    marginHorizontal: 2,
-  },
-
-  featuresRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-    marginTop: 2,
-  },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: {
-    fontSize: 10,
-    color: colors.textSecondary,
-  },
-
-  openBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.textPrimary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  openBtnText: {
-    color: colors.background,
-    fontSize: 13,
-    fontWeight: "600",
-  },
+  map: { flex: 1 },
 });
