@@ -32,9 +32,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
   ],
+  newArchEnabled: true,
   experiments: {
     typedRoutes: true,
-    newArchEnabled: true,
   },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
