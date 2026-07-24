@@ -31,6 +31,38 @@ function haversineKm(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+export async function getMapProperties(req: Request, res: Response): Promise<void> {
+  const parsed = DiscoverQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const { lat, lng, radius = 50, budgetMax, city } = parsed.data;
+
+  const landlordProfiles = await prisma.landlordProfile.findMany({
+    where: {
+      availableRooms: { gt: 0 },
+      ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
+      ...(budgetMax ? { rent: { lte: budgetMax } } : {}),
+    },
+    include: {
+      photos: { orderBy: { order: "asc" } },
+      user: { select: { id: true, email: true, createdAt: true } },
+    },
+    take: 100,
+  });
+
+  let results = landlordProfiles;
+  if (lat !== undefined && lng !== undefined) {
+    results = results.filter(
+      (p) => haversineKm(lat, lng, p.latitude, p.longitude) <= radius
+    );
+  }
+
+  res.json({ properties: results });
+}
+
 export async function discover(req: Request, res: Response): Promise<void> {
   const { userId, userType } = req as AuthRequest;
 

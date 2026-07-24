@@ -27,16 +27,15 @@ const ITALY_REGION: Region = {
   longitudeDelta: 8,
 };
 
-interface DiscoverResponse {
-  profiles: LandlordProfile[];
-  hasMore: boolean;
+interface PropertiesResponse {
+  properties: LandlordProfile[];
 }
 
 async function fetchMapProperties(city: string): Promise<LandlordProfile[]> {
-  const params: Record<string, string> = { limit: "50" };
+  const params: Record<string, string> = {};
   if (city.trim()) params.city = city.trim();
-  const { data } = await api.get<DiscoverResponse>("/discover", { params });
-  return data.profiles as LandlordProfile[];
+  const { data } = await api.get<PropertiesResponse>("/discover/properties", { params });
+  return data.properties ?? [];
 }
 
 export default function MapScreen() {
@@ -137,6 +136,7 @@ export default function MapScreen() {
             key={p.id}
             coordinate={{ latitude: p.latitude, longitude: p.longitude }}
             onPress={() => handleMarkerPress(p)}
+            tracksViewChanges={false}
           >
             <View style={[styles.pin, selectedId === p.id && styles.pinSelected]}>
               <Text style={[styles.pinText, selectedId === p.id && styles.pinTextSelected]}>
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
 
   searchContainer: {
     position: "absolute",
-    top: 50,
+    top: Platform.OS === "android" ? 48 : 56,
     left: spacing.md,
     right: spacing.md,
     zIndex: 10,

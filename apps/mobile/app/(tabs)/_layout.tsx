@@ -1,30 +1,29 @@
 import React from "react";
 import { Tabs, Redirect } from "expo-router";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "../../stores/authStore";
-import { colors, spacing } from "../../utils/theme";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
+const ACTIVE_COLOR = "#FFFFFF";
+const INACTIVE_COLOR = "rgba(255,255,255,0.35)";
+
 interface TabIconProps {
   focused: boolean;
-  label: string;
   icon: IconName;
   iconFocused: IconName;
 }
 
-function TabIcon({ focused, label, icon, iconFocused }: TabIconProps) {
+function TabIcon({ focused, icon, iconFocused }: TabIconProps) {
   return (
     <View style={styles.tabItem}>
+      {focused && <View style={styles.activeIndicator} />}
       <Ionicons
         name={focused ? iconFocused : icon}
-        size={22}
-        color={focused ? colors.textPrimary : colors.textMuted}
+        size={23}
+        color={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
       />
-      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
-        {label}
-      </Text>
     </View>
   );
 }
@@ -40,15 +39,15 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
         tabBarShowLabel: false,
+        tabBarStyle: styles.tabBar,
       }}
     >
       <Tabs.Screen
         name="explore/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Esplora" icon="grid-outline" iconFocused="grid" />
+            <TabIcon focused={focused} icon="grid-outline" iconFocused="grid" />
           ),
         }}
       />
@@ -56,7 +55,7 @@ export default function TabsLayout() {
         name="map/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Mappa" icon="map-outline" iconFocused="map" />
+            <TabIcon focused={focused} icon="map-outline" iconFocused="map" />
           ),
         }}
       />
@@ -64,7 +63,7 @@ export default function TabsLayout() {
         name="matches/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Match" icon="heart-outline" iconFocused="heart" />
+            <TabIcon focused={focused} icon="heart-outline" iconFocused="heart" />
           ),
         }}
       />
@@ -72,7 +71,7 @@ export default function TabsLayout() {
         name="chat/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Chat" icon="chatbubbles-outline" iconFocused="chatbubbles" />
+            <TabIcon focused={focused} icon="chatbubbles-outline" iconFocused="chatbubbles" />
           ),
         }}
       />
@@ -80,7 +79,7 @@ export default function TabsLayout() {
         name="profile/index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} label="Profilo" icon="person-outline" iconFocused="person" />
+            <TabIcon focused={focused} icon="person-outline" iconFocused="person" />
           ),
         }}
       />
@@ -90,25 +89,27 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    height: 64,
-    elevation: 0,
-    shadowOpacity: 0,
+    backgroundColor: "#111111",
+    borderTopWidth: 0,
+    height: Platform.OS === "android" ? 62 : 72,
+    elevation: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
   },
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    paddingTop: spacing.xs,
+    width: 48,
+    height: 48,
   },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: "500",
-    color: colors.textMuted,
-  },
-  tabLabelActive: {
-    color: colors.textPrimary,
+  activeIndicator: {
+    position: "absolute",
+    top: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.10)",
   },
 });

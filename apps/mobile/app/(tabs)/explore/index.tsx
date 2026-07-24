@@ -8,6 +8,7 @@ import {
   Dimensions,
   Animated,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { discoverService } from "../../../services/discoverService";
@@ -202,7 +203,7 @@ export default function ExploreScreen() {
           onPress={handlePass}
           activeOpacity={0.8}
         >
-          <Text style={styles.passButtonText}>✕</Text>
+          <Ionicons name="close" size={28} color={colors.pass} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -218,7 +219,7 @@ export default function ExploreScreen() {
           }}
           activeOpacity={0.8}
         >
-          <Text style={styles.infoButtonText}>i</Text>
+          <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -226,7 +227,7 @@ export default function ExploreScreen() {
           onPress={handleSmash}
           activeOpacity={0.8}
         >
-          <Text style={styles.smashButtonText}>♡</Text>
+          <Ionicons name="heart" size={26} color={colors.smash} />
         </TouchableOpacity>
       </View>
 
@@ -283,39 +284,26 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   actionButton: {
-    width: 56,
-    height: 56,
+    width: 60,
+    height: 60,
     borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   passButton: {
     backgroundColor: colors.passBg,
-    borderColor: colors.pass,
-  },
-  passButtonText: {
-    fontSize: 22,
-    color: colors.pass,
+    borderColor: `${colors.pass}44`,
   },
   smashButton: {
     backgroundColor: colors.smashBg,
-    borderColor: colors.smash,
-  },
-  smashButtonText: {
-    fontSize: 22,
-    color: colors.smash,
+    borderColor: `${colors.smash}44`,
   },
   infoButton: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    width: 44,
-    height: 44,
-  },
-  infoButtonText: {
-    fontSize: 18,
-    color: colors.textMuted,
-    fontStyle: "italic",
+    width: 46,
+    height: 46,
   },
   centered: {
     flex: 1,

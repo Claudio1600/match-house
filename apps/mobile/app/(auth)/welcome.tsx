@@ -8,7 +8,8 @@ import {
   Dimensions,
 } from "react-native";
 import { router } from "expo-router";
-import { colors, radius, spacing, typography } from "../../utils/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, radius, spacing } from "../../utils/theme";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -19,53 +20,56 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      {/* Hero */}
+      <View style={styles.hero}>
+        <View style={styles.logoMark}>
+          <Ionicons name="home" size={28} color="#FFFFFF" />
+        </View>
         <Text style={styles.logo}>Match House</Text>
-        <Text style={styles.tagline}>Trova la stanza giusta.{"\n"}Trova i coinquilini giusti.</Text>
+        <Text style={styles.tagline}>
+          Trova la stanza giusta.{"\n"}Trova le persone giuste.
+        </Text>
       </View>
 
-      <View style={styles.cardsContainer}>
+      {/* Role selection */}
+      <View style={styles.cards}>
         <TouchableOpacity
-          style={[styles.card, styles.cardLandlord]}
+          style={styles.card}
           onPress={() => handleSelect("LANDLORD")}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <View style={styles.cardIcon}>
-            <Text style={styles.cardIconText}>🏠</Text>
+          <View style={[styles.cardIconWrap, { backgroundColor: "#111111" }]}>
+            <Ionicons name="home-outline" size={20} color="#FFFFFF" />
           </View>
-          <Text style={styles.cardTitle}>Sono un proprietario</Text>
-          <Text style={styles.cardDesc}>
-            Ho una stanza o un appartamento da affittare
-          </Text>
-          <View style={styles.cardArrow}>
-            <Text style={styles.cardArrowText}>→</Text>
+          <View style={styles.cardText}>
+            <Text style={styles.cardTitle}>Sono un proprietario</Text>
+            <Text style={styles.cardDesc}>Metto in affitto una stanza o appartamento</Text>
           </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
 
+        <View style={styles.divider} />
+
         <TouchableOpacity
-          style={[styles.card, styles.cardSeeker]}
+          style={styles.card}
           onPress={() => handleSelect("SEEKER")}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <View style={styles.cardIcon}>
-            <Text style={styles.cardIconText}>🔍</Text>
+          <View style={[styles.cardIconWrap, { backgroundColor: colors.smash }]}>
+            <Ionicons name="search-outline" size={20} color="#FFFFFF" />
           </View>
-          <Text style={styles.cardTitle}>Cerco una stanza</Text>
-          <Text style={styles.cardDesc}>
-            Sto cercando un posto dove vivere
-          </Text>
-          <View style={styles.cardArrow}>
-            <Text style={styles.cardArrowText}>→</Text>
+          <View style={styles.cardText}>
+            <Text style={styles.cardTitle}>Cerco una stanza</Text>
+            <Text style={styles.cardDesc}>Sto cercando dove vivere</Text>
           </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
+      {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>Hai già un account?</Text>
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/login")}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={() => router.push("/(auth)/login")} activeOpacity={0.7}>
           <Text style={styles.loginLink}>Accedi</Text>
         </TouchableOpacity>
       </View>
@@ -78,74 +82,75 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: SCREEN_HEIGHT * 0.08,
-    paddingBottom: spacing.xl,
-  },
-  logo: {
-    fontSize: 32,
-    fontWeight: "500",
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  tagline: {
-    ...typography.body,
-    color: colors.textSecondary,
-    lineHeight: 24,
-  },
-  cardsContainer: {
+  hero: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    gap: spacing.md,
     justifyContent: "center",
+    gap: spacing.md,
   },
-  card: {
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  cardLandlord: {
-    backgroundColor: colors.surface,
-  },
-  cardSeeker: {
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.borderStrong,
-  },
-  cardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+  logoMark: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md + 2,
+    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.xs,
   },
-  cardIconText: {
-    fontSize: 22,
+  logo: {
+    fontSize: 36,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.textSecondary,
+    fontWeight: "400",
+  },
+
+  cards: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: "hidden",
+    backgroundColor: colors.surface,
+  },
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
+  },
+  cardIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardText: {
+    flex: 1,
+    gap: 2,
   },
   cardTitle: {
-    ...typography.h3,
+    fontSize: 15,
+    fontWeight: "600",
     color: colors.textPrimary,
   },
   cardDesc: {
-    ...typography.body,
+    fontSize: 13,
     color: colors.textSecondary,
   },
-  cardArrow: {
-    position: "absolute",
-    right: spacing.lg,
-    top: "50%",
-    marginTop: -10,
-  },
-  cardArrowText: {
-    ...typography.h3,
-    color: colors.textMuted,
-  },
+
   footer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -154,13 +159,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   footerText: {
-    ...typography.body,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   loginLink: {
-    ...typography.body,
+    fontSize: 14,
     color: colors.textPrimary,
-    fontWeight: "500",
-    textDecorationLine: "underline",
+    fontWeight: "600",
   },
 });
